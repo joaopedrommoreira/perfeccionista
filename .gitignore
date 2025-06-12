@@ -1,0 +1,24 @@
+# Arquivos de ambiente e segredos do Python
+.env
+venv/
+__pycache__/
+instance/
+*.pyc
+
+backend/.env
+backend/client_secrets.json
+
+# Arquivo do banco de dados SQLite
+database.db
+
+# Arquivos de dependências do Node.js (MUITO IMPORTANTE)
+node_modules/
+
+# Arquivos de build do React
+build/
+
+# Logs de erro e arquivos do sistema operacional
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

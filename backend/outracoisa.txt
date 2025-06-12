@@ -1,0 +1,194 @@
+import os
+from datetime import datetime, timedelta, timezone
+
+import jwt
+import requests
+from dotenv import load_dotenv
+from flask import Flask, redirect, request, session
+from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+from google_auth_oauthlib.flow import Flow
+
+# --- 1. CONFIGURAÇÃO INICIAL E EXTENSÕES ---
+load_dotenv()
+app = Flask(__name__)
+app.secret_key = os.urandom(24) # Essencial para a 'session' do Flask
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:3000"}}, supports_credentials=True)
+
+# Configuração do Banco de Dados
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+# --- 2. CARREGAMENTO DE CHAVES E CONSTANTES ---
+STEAM_API_KEY = os.getenv("STEAM_API_KEY")
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+GOOGLE_SCOPES = ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
+CLIENT_SECRETS_FILE = 'client_secrets.json'
+print(f"DEBUG: Chave secreta JWT carregada do .env = '{JWT_SECRET_KEY}'")
+# --- 3. MODELO DO BANCO DE DADOS ---
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    picture_url = db.Column(db.String(250), nullable=True)
+    steam_id = db.Column(db.String(50), unique=True, nullable=True)
+
+    def __repr__(self):
+        return f'<User {self.name}>'
+
+# --- 4. ROTAS DE AUTENTICAÇÃO E LOGIN COM GOOGLE ---
+@app.route('/api/auth/google/login')
+def google_login():
+    flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=GOOGLE_SCOPES, redirect_uri='http://localhost:5000/api/auth/google/callback')
+    authorization_url, state = flow.authorization_url(access_type='offline', include_granted_scopes='true')
+    session['state'] = state
+    return redirect(authorization_url)
+
+@app.route('/api/auth/google/callback')
+def google_callback():
+    state = session['state']
+    flow = Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=GOOGLE_SCOPES, state=state, redirect_uri='http://localhost:5000/api/auth/google/callback')
+    flow.fetch_token(authorization_response=request.url)
+    credentials = flow.credentials
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials.id_token, 
+        request=google_requests.Request(), 
+        audience=flow.client_config['client_id'],
+        clock_skew_in_seconds=10  # <-- ADICIONE ESTE PARÂMETRO
+    )
+    id_info = id_token.verify_oauth2_token(id_token=credentials.id_token, request=google_requests.Request(), audience=flow.client_config['client_id'])
+
+    user_email = id_info.get('email')
+    user_name = id_info.get('name')
+    user_picture = id_info.get('picture')
+
+    user = User.query.filter_by(email=user_email).first()
+
+    if user is None:
+        user = User(email=user_email, name=user_name, picture_url=user_picture)
+        db.session.add(user)
+        print(f"Novo usuário criado: {user_name}")
+    else:
+        user.name = user_name
+        user.picture_url = user_picture
+        print(f"Usuário existente, bem-vindo de volta: {user_name}")
+
+    db.session.commit()
+    
+    payload = {
+        'sub': str(user.id),      # Usamos o ID do usuário como identificador principal (subject)
+        'email': user.email, # Opcional, mas útil
+        'iat': datetime.now(timezone.utc),
+        'exp': datetime.now(timezone.utc) + timedelta(hours=24)
+    }
+    
+    token = jwt.encode(payload, JWT_SECRET_KEY, algorithm="HS256")
+    
+    return redirect(f"http://localhost:3000/auth/callback?token={token}")
+
+@app.route('/api/me')
+def get_current_user():
+    # Pegamos o token do cabeçalho da requisição (método mais seguro que URL)
+    auth_header = request.headers.get('Authorization')
+    
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return {"error": "Cabeçalho de autorização ausente ou mal formatado"}, 401
+
+    token = auth_header.split(' ')[1]
+
+    try:
+        # Decodificamos o token para pegar o ID do usuário
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
+        leeway=10
+        user_id = payload['sub']
+        
+        # Buscamos o usuário no banco de dados
+        user = User.query.get(user_id)
+        
+        if not user:
+            return {"error": "Usuário não encontrado"}, 404
+            
+        # Retornamos os dados do usuário como JSON
+        return {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "picture_url": user.picture_url,
+            "steam_id": user.steam_id
+        }
+
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return {"error": "Token inválido ou expirado"}, 401
+    
+# --- 5. ROTAS DE VINCULAÇÃO COM A STEAM ---
+@app.route('/api/steam/link')
+def steam_link():
+    token = request.args.get('jwt')
+    print(f"BACK-END: Recebido este token do front-end: {token}")
+    if not token:
+        return "Erro: Token JWT não fornecido.", 401
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
+        user_id = payload['sub']
+        session['user_id_to_link'] = user_id
+        
+        steam_auth_url = ("https://steamcommunity.com/openid/login?openid.ns=http://specs.openid.net/auth/2.0&openid.mode=checkid_setup"
+                          "&openid.return_to=http://localhost:5000/api/auth/steam/callback&openid.realm=http://localhost:5000"
+                          "&openid.identity=http://specs.openid.net/auth/2.0/identifier_select&openid.claimed_id=http://specs.openid.net/auth/2.0/identifier_select")
+        return redirect(steam_auth_url)
+    except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+        return "Erro: Token inválido ou expirado.", 401
+
+@app.route('/api/auth/steam/callback')
+def steam_callback():
+    user_id = session.get('user_id_to_link')
+    if not user_id:
+        return "Erro: Nenhuma sessão de usuário encontrada para vincular a conta.", 400
+
+    # --- LÓGICA DE VALIDAÇÃO CORRIGIDA ---
+    
+    # 1. Pega TODOS os parâmetros que a Steam enviou na URL como um dicionário
+    params = request.args.to_dict()
+    
+    # 2. Altera o 'mode' para 'check_authentication', que é o que a validação exige
+    params['openid.mode'] = 'check_authentication'
+
+    # 3. Envia TODOS os parâmetros de volta para a Steam para validação
+    response = requests.post('https://steamcommunity.com/openid/login', data=params)
+
+    # O debug que adicionamos continua útil aqui para confirmar
+    print("\n--- DEBUG DA VALIDAÇÃO STEAM (VERSÃO CORRIGIDA) ---")
+    print(f"Argumentos enviados para validação: {params}")
+    print(f"Status da resposta da Steam: {response.status_code}")
+    print(f"Texto da resposta da Steam: {response.text}")
+    print("--- FIM DO DEBUG ---\n")
+
+    if "is_valid:true" in response.text:
+        steam_id = request.args.get('openid.claimed_id').split('/')[-1]
+        
+        user_to_update = User.query.get(user_id)
+        if user_to_update:
+            user_to_update.steam_id = steam_id
+            db.session.commit()
+            print(f"Vinculação bem-sucedida! Steam ID {steam_id} associado ao usuário com ID {user_id}")
+        else:
+            return redirect("http://localhost:3000/profile?error=user_not_found")
+
+        session.pop('user_id_to_link', None)
+        return redirect(f"http://localhost:3000/profile?steam_linked=true")
+    else:
+        session.pop('user_id_to_link', None)
+        return redirect("http://localhost:3000/profile?error=steam_link_failed")
+
+# --- 6. ROTAS DE DADOS (Exemplo a ser implementado) ---
+@app.route('/api/user/<steam_id>/games')
+def get_user_games(steam_id):
+    # Futuramente, buscaremos os jogos do usuário com este steam_id
+    return f"Rota para buscar os jogos do usuário com Steam ID: {steam_id}. A ser implementada."
+
+# --- 7. INICIALIZAÇÃO DO SERVIDOR ---
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
