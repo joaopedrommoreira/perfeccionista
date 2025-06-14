@@ -261,7 +261,7 @@ def equip_banner():
 @main_bp.route('/user/<int:user_id>/platinados')
 def get_user_platinados(user_id):
     user = User.query.get_or_404(user_id)
-    platinados = user.platinados
+    platinados = Platinado.query.filter_by(user_id=user.id).order_by(Platinado.achieved_at.desc()).limit(12).all()
     platinados_data = [{"appid": p.game_appid, "name": p.game_name} for p in platinados]
     return jsonify({"games": platinados_data})
 
