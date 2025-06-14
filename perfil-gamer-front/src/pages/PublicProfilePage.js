@@ -140,11 +140,16 @@ return (
                     <div className="games-grid-public">
                         {games.length > 0 ? (
                             games.map(game => (
-                                <div key={game.appid} className="profile-game-card">
-                                    <img 
-                                        src={`https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${game.appid}/header.jpg`} 
-                                        alt={game.name} 
-                                    />
+                                <div key={`<span class="math-inline">\{game\.platform\}\-</span>{game.appid}`} className="profile-game-card">
+<img 
+                        // --- LÓGICA CONDICIONAL DA IMAGEM ---
+                        src={
+                            game.platform === 'steam'
+                            ? `https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${game.appid}/header.jpg`
+                            : 'https://i.postimg.cc/Y2RVXmwj/Sem-T-tulo-1.png'
+                        } 
+                        alt={game.name} 
+                    />
                                     <div className="profile-game-card-title">
                                         {game.name}
                                     </div>

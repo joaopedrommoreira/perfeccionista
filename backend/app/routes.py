@@ -266,7 +266,7 @@ def get_user_platinados(user_id):
         platform='steam'
     ).order_by(Platinado.achieved_at.desc()).limit(12).all()
     platinados = Platinado.query.filter_by(user_id=user.id).order_by(Platinado.achieved_at.desc()).limit(12).all()
-    platinados_data = [{"appid": p.game_appid, "name": p.game_name} for p in platinados]
+    platinados_data = [{"appid": p.game_appid, "name": p.game_name, "platform": p.platform} for p in platinados]
     return jsonify({"games": platinados_data})
 
 @main_bp.route('/user/<int:user_id>/follow', methods=['POST'])
