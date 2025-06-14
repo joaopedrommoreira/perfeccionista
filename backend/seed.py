@@ -94,7 +94,7 @@ SHOP_ITEMS_TO_SEED = [
         'price_coins': 500, 
         'item_type': 'BANNER', # Define que este item é um banner equipável
         'appid': 292030,
-        'value': 'https://images6.alphacoders.com/123/thumb-1920-1234456.jpg' # O valor é a própria URL do banner
+        'value': 'https://i.postimg.cc/VNs56pLk/tw3.png' # O valor é a própria URL do banner
     }
 ]
 

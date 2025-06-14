@@ -736,6 +736,17 @@ main {
   margin: 0;
 }
 
+.ranking-link {
+  text-decoration: none;
+  color: inherit; /* Herda a cor do texto do elemento pai */
+}
+
+.ranking-item:hover {
+  background-color: #3a5f8a; /* Cor de destaque que já tínhamos */
+  cursor: pointer; /* Muda o cursor para a 'mãozinha' de link */
+  transform: scale(1.02); /* Efeito de leve crescimento */
+}
+
 .ranking-item {
   display: flex;
   align-items: center;
@@ -744,6 +755,7 @@ main {
   padding: 10px;
   border-radius: 6px;
   transition: background-color 0.2s ease;
+  transition: transform 0.2s ease, background-color 0.2s ease;
 }
 
 .ranking-item:hover {
@@ -996,4 +1008,167 @@ main {
 
 .inventory-detail-panel h2 {
   margin-top: 0;
+}
+
+/* ============================ */
+/* ESTILOS PARA O NOVO DASHBOARD */
+/* ============================ */
+
+.dashboard-panel {
+  background-color: #282c34;
+  padding: 2.5rem; /* 40px */
+  border-radius: 12px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+}
+
+.dashboard-section {
+  margin-bottom: 2.5rem; /* 40px */
+}
+.dashboard-section:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-section h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem; /* 24px */
+  border-bottom: 1px solid #444c56;
+  padding-bottom: 0.75rem; /* 12px */
+}
+
+.dashboard-divider {
+  border: none;
+  border-top: 1px solid #444c56;
+  margin: 2.5rem 0;
+}
+
+/* Layout de 2 colunas para as configurações */
+.profile-settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+.status-message-box {
+  text-align: center;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #61dafb;
+  border-radius: 8px;
+  background-color: #2c3e50;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #ccc;
+}
+.inline-form {
+  display: flex;
+  gap: 0.5rem;
+}
+.inline-form input {
+  flex-grow: 1;
+}
+
+/* Lista de contas vinculadas */
+.linked-accounts-list {
+  display: flex;
+  gap: 1rem;
+}
+.account-item {
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  border: 2px solid;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.account-item.linked {
+  background-color: #2e7d32;
+  border-color: #4caf50;
+  color: white;
+}
+.account-item.steam {
+  background-color: #1b2838;
+  border-color: #356095;
+  color: #66c0f4;
+}
+.account-item.steam:hover {
+  background-color: #1b2838;
+}
+.account-item:disabled {
+  background-color: #444c56;
+  border-color: #616161;
+  color: #9e9e9e;
+  cursor: not-allowed;
+}
+
+
+/* Formulário melhorado para adicionar jogo */
+.add-game-form-improved {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background-color: #1e2229;
+  padding: 0.75rem;
+  border-radius: 8px;
+}
+.add-game-form-improved .search-type-selector {
+  margin-bottom: 0;
+  flex-shrink: 0; /* Não deixa o seletor encolher */
+}
+.add-game-form-improved input {
+  flex-grow: 1; /* Faz o input ocupar todo o espaço */
+  background: #333;
+  border: 1px solid #555;
+  color: white;
+  padding: 0.75rem;
+  border-radius: 4px;
+}
+.add-game-form-improved button {
+  flex-shrink: 0; /* Não deixa o botão encolher */
+}
+
+.account-item.retro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #333366;
+  border-color: #6666cc;
+  padding: 10px;
+  color: white; /* Faz ocupar mais espaço */
+}
+.button-sync {
+  background-color: #6666cc;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.platform-selector {
+    display: flex;
+    margin-bottom: 15px;
+    border: 1px solid #444c56;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.platform-btn {
+    flex-grow: 1;
+    padding: 10px;
+    border: none;
+    background-color: transparent;
+    color: #ccc;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.platform-btn:hover {
+    background-color: #3a5f8a;
+}
+.platform-btn.active {
+    background-color: #61dafb;
+    color: #161920;
+    font-weight: bold;
 }

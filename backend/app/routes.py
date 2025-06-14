@@ -16,6 +16,8 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 GOOGLE_SCOPES = ['https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email', 'openid']
 CLIENT_SECRETS_FILE = 'client_secrets.json'
 STEAM_API_KEY = os.getenv("STEAM_API_KEY")
+RETRO_API_USER = os.getenv("RETRO_API_USER")
+RETRO_API_KEY = os.getenv("RETRO_API_KEY")
 
 # --- Rotas de Autenticação ---
 @main_bp.route('/auth/google/login')
@@ -59,7 +61,7 @@ def get_current_user():
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"], leeway=10)
         user = User.query.get(payload['sub'])
         if not user: return jsonify({"error": "Usuário não encontrado"}), 404
-        return jsonify({"id": user.id, "username": user.username, "name": user.name, "email": user.email, "picture_url": user.picture_url, "steam_id": user.steam_id, "total_xp": user.total_xp, "total_coins": user.total_coins})
+        return jsonify({"id": user.id, "username": user.username, "name": user.name, "email": user.email, "picture_url": user.picture_url, "steam_id": user.steam_id, "retro_username": user.retro_username, "total_xp": user.total_xp, "total_coins": user.total_coins})
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return jsonify({"error": "Token inválido ou expirado"}), 401
 
@@ -89,6 +91,73 @@ def list_shop_items():
             "stock": stock
         })
     return jsonify(items_data)
+
+
+@main_bp.route('/profile/link-retro', methods=['POST'])
+def link_retro_account():
+    # ... (lógica para pegar o usuário a partir do token JWT) ...
+    auth_header = request.headers.get('Authorization')
+    token = auth_header.split(' ')[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"], leeway=10)
+        user = User.query.get(payload['sub'])
+    except:
+        return jsonify({"error": "Token inválido"}), 401
+
+    retro_username = request.get_json().get('retro_username')
+    if not retro_username:
+        return jsonify({"error": "Nome de usuário do RA não fornecido."}), 400
+
+    # Remove espaços em branco que podem estar causando problemas
+    retro_username = retro_username.strip()
+
+    # --- INÍCIO DA DEPURAÇÃO ---
+    print("\n--- DEBUG DA API RETROACHIEVEMENTS ---")
+    print(f"API User sendo usado: '{RETRO_API_USER}'")
+    # Mostramos apenas os 5 primeiros caracteres da chave por segurança
+    print(f"API Key sendo usada: '{RETRO_API_KEY[:5] if RETRO_API_KEY else 'None'}...'")
+    print(f"Username para buscar: '{retro_username}'")
+    
+    # Codifica a URL para lidar com caracteres especiais
+    from urllib.parse import quote
+    encoded_username = quote(retro_username)
+    ra_url = f"https://retroachievements.org/API/API_GetUserProfile.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&u={encoded_username}"
+    print(f"URL montada para a requisição: {ra_url}")
+    print("------------------------------------\n")
+    # --- FIM DA DEPURAÇÃO ---
+
+    try:
+        response = requests.get(ra_url)
+        response.raise_for_status()
+        print(f"Status da resposta: {response.status_code}")
+        print(f"Conteúdo da resposta: {response.text[:500]}...")  # Primeiros 500 caracteres
+        
+        ra_data = response.json()
+        print(f"Dados JSON recebidos: {ra_data}")
+        
+        # Verifica se a resposta contém erro ou se o usuário não foi encontrado
+        if 'Error' in ra_data:
+            return jsonify({"error": f"Erro da API RetroAchievements: {ra_data['Error']}"}), 404
+        elif not ra_data or 'User' not in ra_data:
+            return jsonify({"error": f"Usuário '{retro_username}' não encontrado no RetroAchievements. Verifique se o nome está correto."}), 404
+    except requests.exceptions.RequestException as e:
+        print(f"Erro de requisição ao RetroAchievements: {e}")
+        return jsonify({"error": "Não foi possível conectar com o RetroAchievements."}), 500
+    except ValueError as e:
+        print(f"Erro ao fazer parse do JSON: {e}")
+        print(f"Resposta recebida: {response.text}")
+        return jsonify({"error": "Resposta inválida do RetroAchievements."}), 500
+    except Exception as e:
+        print(f"Erro inesperado ao verificar usuário no RetroAchievements: {e}")
+        return jsonify({"error": "Não foi possível verificar a conta no RetroAchievements."}), 500
+
+    user.retro_username = retro_username
+    db.session.commit()
+    return jsonify({"message": "Conta do RetroAchievements vinculada com sucesso!"})
+
+
+
+
 
 @main_bp.route('/shop/buy/<int:item_id>', methods=['POST'])
 def buy_item(item_id):
@@ -217,7 +286,7 @@ def follow_user(user_id):
     # Lógica de seguir
     user_to_follow = User.query.get_or_404(user_id)
     if user_to_follow.id == current_user.id:
-        return jsonify({"error": "Você не pode seguir a si mesmo."}), 400
+        return jsonify({"error": "Você não pode seguir a si mesmo."}), 400
     
     current_user.follow(user_to_follow)
     db.session.commit()
@@ -414,50 +483,225 @@ def steam_callback():
 
 @main_bp.route('/profile/games', methods=['POST'])
 def add_platinado_game():
+    # 1. Autenticação do usuário (padrão para rotas protegidas)
     auth_header = request.headers.get('Authorization')
-    if not auth_header or not auth_header.startswith('Bearer '): return jsonify({"error": "Autorização ausente"}), 401
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({"error": "Autorização ausente"}), 401
     token = auth_header.split(' ')[1]
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"], leeway=10)
         user = User.query.get(payload['sub'])
-        if not user or not user.steam_id: return jsonify({"error": "Usuário não encontrado ou conta Steam não vinculada."}), 404
+        if not user:
+            return jsonify({"error": "Usuário não encontrado"}), 404
     except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
         return jsonify({"error": "Token inválido ou expirado"}), 401
+
+    # 2. Pega os dados enviados pelo front-end
     data = request.get_json()
-    if not data or not (data.get('game_name') or data.get('appid')): return jsonify({"error": "Nome do jogo ou AppID não fornecido."}), 400
-    game_name_to_check, appid_to_check = data.get('game_name'), data.get('appid')
-    game_rule = None
-    if appid_to_check:
+    platform = data.get('platform', 'steam')  # Pega a plataforma (padrão: 'steam')
+    identifier = data.get('identifier')      # Pega o identificador (nome do jogo ou ID)
+    
+    if not identifier:
+        return jsonify({"error": "Nome ou ID do jogo não fornecido."}), 400
+
+    # =================================================
+    # --- BLOCO DE LÓGICA PARA A PLATAFORMA STEAM ---
+    # =================================================
+    if platform == 'steam':
+        if not user.steam_id:
+            return jsonify({"error": "Conta Steam não vinculada."}), 400
+
+        # Tenta converter o identificador para um AppID (se for número)
         try:
-            game_rule = Game.query.filter_by(appid=int(appid_to_check)).first()
+            appid_to_check = int(identifier)
+            game_rule = Game.query.filter_by(appid=appid_to_check, platform='steam').first()
         except ValueError:
-            return jsonify({"error": "AppID deve ser um número."}), 400
-    elif game_name_to_check:
-        game_rule = Game.query.filter(Game.name.ilike(f"%{game_name_to_check}%")).first()
-    if not game_rule: return jsonify({"error": "Este jogo não está em nosso banco de dados. Peça a um administrador para cadastrá-lo."}), 404
-    appid, official_game_name = game_rule.appid, game_rule.name
-    if Platinado.query.filter_by(user_id=user.id, game_appid=appid).first():
-        return jsonify({"message": f'"{official_game_name}" já está no seu perfil.'}), 200
+            # Se não for número, busca pelo nome
+            game_rule = Game.query.filter(Game.name.ilike(f"%{identifier}%"), Game.platform == 'steam').first()
+
+        if not game_rule:
+            return jsonify({"error": "Este jogo não se encontra em nosso banco de dados."}), 404
+        
+        appid = game_rule.appid
+        official_game_name = game_rule.name
+
+        # Verifica se o jogo já foi adicionado
+        if Platinado.query.filter_by(user_id=user.id, game_appid=appid, platform='steam').first():
+            return jsonify({"message": f'"{official_game_name}" já está no seu perfil.'}), 200
+
+        # Lógica de verificação na API da Steam (posse e conquistas)
+        try:
+            owned_games_url = f"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={STEAM_API_KEY}&steamid={user.steam_id}&format=json"
+            owned_games_appids = [game['appid'] for game in requests.get(owned_games_url).json().get('response', {}).get('games', [])]
+            if appid not in owned_games_appids:
+                return jsonify({"error": f'Você não possui "{official_game_name}" na sua conta Steam.'}), 403
+            
+            achievements_url = f"http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={appid}&key={STEAM_API_KEY}&steamid={user.steam_id}"
+            achievements_data = requests.get(achievements_url).json().get('playerstats', {})
+            if not achievements_data.get('success') or 'achievements' not in achievements_data:
+                return jsonify({"error": f'Não foi possível obter conquistas para "{official_game_name}".'}), 404
+            
+            if all(ach.get('achieved') == 1 for ach in achievements_data['achievements']):
+                user.total_xp += game_rule.xp_value
+                user.total_coins += game_rule.coin_value
+                db.session.add(Platinado(user_id=user.id, game_appid=appid, game_name=official_game_name, platform='steam'))
+                db.session.commit()
+                return jsonify({"message": f'Verificado! Você platinou "{official_game_name}" e ganhou {game_rule.xp_value} XP e {game_rule.coin_value} Fichas!'}), 200
+            else:
+                total = len(achievements_data['achievements'])
+                achieved_count = sum(1 for ach in achievements_data['achievements'] if ach.get('achieved') == 1)
+                return jsonify({"error": f'Verificação falhou. Você completou {achieved_count} de {total} conquistas.'}), 403
+        except Exception as e:
+            return jsonify({"error": f"Ocorreu um erro ao se comunicar com a Steam: {e}"}), 500
+
+    # ============================================================
+    # --- BLOCO DE LÓGICA PARA A PLATAFORMA RETROACHIEVEMENTS ---
+    # ============================================================
+    elif platform == 'retroachievements':
+        if not user.retro_username:
+            return jsonify({"error": "Conta do RetroAchievements não vinculada."}), 400
+        
+        try:
+            game_id = int(identifier)
+        except ValueError:
+            return jsonify({"error": "Para RetroAchievements, o ID do jogo deve ser um número."}), 400
+
+        if Platinado.query.filter_by(user_id=user.id, game_appid=game_id, platform='retroachievements').first():
+            return jsonify({"message": 'Este jogo já está no seu perfil.'}), 200
+
+        try:
+            # Use the correct API endpoint with proper parameters
+            ra_url = f"https://retroachievements.org/API/API_GetUserProgress.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&u={user.retro_username}&i={game_id}"
+            print(f"URL da API RetroAchievements: {ra_url}")
+            
+            response = requests.get(ra_url)
+            response.raise_for_status()
+            print(f"Status da resposta: {response.status_code}")
+            print(f"Resposta da API: {response.text}")
+
+            ra_data = response.json()
+            
+            # Check for API errors first
+            if 'Error' in ra_data:
+                return jsonify({"error": f"Erro da API RetroAchievements: {ra_data['Error']}"}), 404
+            
+            # Debug the actual response structure first
+            print(f"Debug - Dados completos recebidos: {ra_data}")
+            
+            # Try multiple possible field names for achievements
+            num_achievements = (ra_data.get('NumPossibleAchievements') or 
+                              ra_data.get('PossibleScore') or 
+                              ra_data.get('MaxPossible') or 0)
+            
+            achieved_hardcore = (ra_data.get('NumAchievedHardcore') or 
+                               ra_data.get('ScoreAchievedHardcore') or 
+                               ra_data.get('HardcoreAchievements') or 0)
+            
+            achieved_softcore = (ra_data.get('NumAchieved') or 
+                               ra_data.get('ScoreAchieved') or 
+                               ra_data.get('SoftcoreAchievements') or 0)
+            
+            game_name = (ra_data.get('Title') or 
+                        ra_data.get('GameTitle') or 
+                        ra_data.get('GameName') or 
+                        f"Jogo RA ID {game_id}")
+
+            print(f"Debug - Conquistas possíveis: {num_achievements}, Hardcore conquistadas: {achieved_hardcore}, Softcore: {achieved_softcore}")
+            print(f"Debug - Tipos de dados: num_achievements={type(num_achievements)}, achieved_hardcore={type(achieved_hardcore)}")
+            
+            # If we don't have achievement data, try alternative API call
+            if num_achievements == 0:
+                # Try getting game info first to verify the game exists
+                game_info_url = f"https://retroachievements.org/API/API_GetGame.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&i={game_id}"
+                game_info_response = requests.get(game_info_url)
+                game_info_data = game_info_response.json()
+                
+                if 'Error' in game_info_data:
+                    return jsonify({"error": f"Jogo não encontrado: {game_info_data['Error']}"}), 404
+                
+                num_achievements = game_info_data.get('NumAchievements', 0)
+                game_name = game_info_data.get('Title', f"Jogo RA ID {game_id}")
+                
+                if num_achievements == 0:
+                    return jsonify({"error": f"O jogo '{game_name}' não possui conquistas disponíveis."}), 404
+
+            if num_achievements > 0 and achieved_hardcore >= num_achievements:
+                game_rule = Game.query.filter_by(appid=game_id, platform='retroachievements').first()
+                xp_ganho = game_rule.xp_value if game_rule else 10
+                fichas_ganhas = game_rule.coin_value if game_rule else 5
+                user.total_xp += xp_ganho
+                user.total_coins += fichas_ganhas
+                db.session.add(Platinado(user_id=user.id, game_appid=game_id, game_name=game_name, platform='retroachievements'))
+                db.session.commit()
+                return jsonify({"message": f'Verificado! Você masterizou "{game_name}" e ganhou {xp_ganho} XP e {fichas_ganhas} Fichas!'}), 200
+            else:
+                return jsonify({"error": f"Verificação falhou. Você ainda não masterizou '{game_name}' no modo Hardcore. ({achieved_hardcore}/{num_achievements} conquistas hardcore)"}), 403
+        except Exception as e:
+            return jsonify({"error": f"Ocorreu um erro ao se comunicar com a API do RetroAchievements: {e}"}), 500
+
+    else:
+        return jsonify({"error": "Plataforma desconhecida."}), 400
+
+@main_bp.route('/profile/games/retro', methods=['GET', 'POST'])
+def get_retro_achievements_games():
+    username = request.json.get('username')
+    api_key = request.json.get('api_key')
+    
+    if not username or not api_key:
+        return jsonify({"error": "Username and API key are required"}), 400
+    
     try:
-        owned_games_url = f"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={STEAM_API_KEY}&steamid={user.steam_id}&format=json"
-        owned_games_appids = [game['appid'] for game in requests.get(owned_games_url).json().get('response', {}).get('games', [])]
-        if appid not in owned_games_appids: return jsonify({"error": f'Você não possui "{official_game_name}" na sua conta Steam.'}), 403
-        achievements_url = f"http://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid={appid}&key={STEAM_API_KEY}&steamid={user.steam_id}"
-        achievements_data = requests.get(achievements_url).json().get('playerstats', {})
-        if not achievements_data.get('success') or 'achievements' not in achievements_data:
-            return jsonify({"error": f'Não foi possível obter conquistas para "{official_game_name}".'}), 404
-        if all(ach.get('achieved') == 1 for ach in achievements_data['achievements']):
-            user.total_xp = (user.total_xp or 0) + game_rule.xp_value
-            user.total_coins = (user.total_coins or 0) + game_rule.coin_value
-            db.session.add(Platinado(user_id=user.id, game_appid=appid, game_name=official_game_name))
-            db.session.commit()
-            return jsonify({"message": f'Verificado! Você platinou "{official_game_name}" e ganhou {game_rule.xp_value} XP e {game_rule.coin_value} Fichas!'}), 200
-        else:
-            total = len(achievements_data['achievements'])
-            achieved_count = sum(1 for ach in achievements_data['achievements'] if ach.get('achieved') == 1)
-            return jsonify({"error": f'Verificação falhou. Você completou {achieved_count} de {total} conquistas.'}), 403
+        # First, get the user's completed games list
+        games_url = f"https://retroachievements.org/API/API_GetUserCompletedGames.php?z={username}&y={api_key}&u={username}"
+        games_response = requests.get(games_url, timeout=10)
+        
+        if games_response.status_code != 200:
+            return jsonify({"error": f"Failed to fetch games list, status code: {games_response.status_code}"}), 500
+        
+        games_data = games_response.json()
+        
+        # If no games returned, return empty list
+        if not games_data:
+            return jsonify({"games": [], "message": "No completed games found"}), 200
+        
+        mastered_games = []
+        
+        for game in games_data:
+            game_id = game.get('GameID')
+            
+            # Get detailed progress for each game
+            progress_url = f"https://retroachievements.org/API/API_GetUserProgress.php?z={username}&y={api_key}&u={username}&i={game_id}"
+            progress_response = requests.get(progress_url, timeout=10)
+            
+            if progress_response.status_code == 200:
+                progress_data = progress_response.json()
+                
+                # Extract the data from the nested structure
+                if str(game_id) in progress_data:
+                    game_progress = progress_data[str(game_id)]
+                    
+                    num_possible = int(game_progress.get('NumPossibleAchievements', 0))
+                    num_achieved_hardcore = int(game_progress.get('NumAchievedHardcore', 0))
+                    
+                    # Check if game is mastered (all achievements unlocked in hardcore mode)
+                    if num_possible > 0 and num_achieved_hardcore == num_possible:
+                        # Get game details
+                        game_info = {
+                            "id": game_id,
+                            "title": game.get('Title'),
+                            "console": game.get('ConsoleName'),
+                            "image": f"https://retroachievements.org{game.get('ImageIcon', '')}",
+                            "achievements_total": num_possible,
+                            "achievements_completed": num_achieved_hardcore,
+                            "completion_date": game.get('LastPlayed')
+                        }
+                        mastered_games.append(game_info)
+        
+        return jsonify({"games": mastered_games}), 200
+        
     except Exception as e:
-        return jsonify({"error": f"Ocorreu um erro ao se comunicar com a Steam: {e}"}), 500
+        print(f"Error fetching RetroAchievements data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @main_bp.route('/games/recent')
 def get_recent_games():

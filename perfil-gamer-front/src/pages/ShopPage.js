@@ -1,12 +1,12 @@
 // src/pages/ShopPage.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 import './ShopPage.css'; // Certifique-se de ter um arquivo CSS para estilos
 
 export default function ShopPage() {
     const [items, setItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [statusMessage, setStatusMessage] = useState('');
     const [redeemedKey, setRedeemedKey] = useState(null);
     const { currentUser, refetchUser } = useAuth(); 
 
@@ -25,37 +25,36 @@ export default function ShopPage() {
         fetchItems();
     }, []);
 
-    const handleRedeemItem = async (itemId) => {
-    setRedeemedKey(null);
-    setStatusMessage('Processando resgate...');
-    const token = localStorage.getItem('userToken');
-    if (!token) { 
-        setStatusMessage("Você precisa estar logado para resgatar itens."); 
-        return; 
-    }
-    
-    try {
-        const response = await fetch(`http://localhost:5000/api/shop/buy/${itemId}`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        const data = await response.json();
-        if (!response.ok) {
-            // Se a resposta da API não for 'ok', lança um erro com a mensagem do backend
-            throw new Error(data.error || 'Ocorreu um erro desconhecido.');
+        const handleRedeemItem = async (itemId) => {
+        setRedeemedKey(null);
+        // Não precisamos mais do setStatusMessage aqui
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            toast.error("Você precisa estar logado para comprar."); // Notificação de erro
+            return;
         }
 
-        // Se a compra foi bem-sucedida
-        setStatusMessage(data.message);
-        setRedeemedKey(data.redeemed_key); // Mostra a chave resgatada
+        try {
+            const response = await fetch(`http://localhost:5000/api/shop/buy/${itemId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
 
-        // CHAMA A NOVA FUNÇÃO PARA ATUALIZAR OS DADOS DO USUÁRIO EM TODO O SITE
-        await refetchUser();
+            // Se a compra foi bem-sucedida, mostra um toast de sucesso
+            toast.success(data.message); 
 
-    } catch (error) {
-        setStatusMessage(`Erro: ${error.message}`);
-    }
+            if (data.redeemed_key) {
+                setRedeemedKey(data.redeemed_key);
+            }
+
+            await refetchUser();
+
+        } catch (error) {
+            // Se deu erro, mostra um toast de erro
+            toast.error(`Erro: ${error.message}`);
+        }
 };
 
     if (isLoading) return <div className="container"><h1>Carregando Loja...</h1></div>;
@@ -83,7 +82,6 @@ export default function ShopPage() {
                     <div className="key-box">{redeemedKey}</div>
                 </div>
             )}
-            {statusMessage && !redeemedKey && <p>{statusMessage}</p>}
 
             {/* --- NOVA ESTRUTURA DE GRADE PARA A LOJA --- */}
             <div className="shop-grid">

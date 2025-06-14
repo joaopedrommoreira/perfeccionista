@@ -17,6 +17,7 @@ class User(db.Model):
     name = db.Column(db.String(120), nullable=False)
     picture_url = db.Column(db.String(250), nullable=True)
     steam_id = db.Column(db.String(50), unique=True, nullable=True)
+    retro_username = db.Column(db.String(80), unique=True, nullable=True)
     total_xp = db.Column(db.Integer, nullable=False, default=0)
     total_coins = db.Column(db.Integer, nullable=False, default=0)
     equipped_banner_url = db.Column(db.String(255), nullable=True)
@@ -53,6 +54,7 @@ class Platinado(db.Model):
     game_appid = db.Column(db.Integer, nullable=False)
     game_name = db.Column(db.String(200), nullable=False)
     achieved_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    platform = db.Column(db.String(50), nullable=False, default='steam')
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class Game(db.Model):
@@ -62,6 +64,7 @@ class Game(db.Model):
     name = db.Column(db.String(200), nullable=False)
     difficulty = db.Column(db.String(50), nullable=False, default='Padrão')
     xp_value = db.Column(db.Integer, nullable=False, default=10)
+    platform = db.Column(db.String(50), nullable=False, default='steam')
     coin_value = db.Column(db.Integer, nullable=False, default=5)
 
 # --- MODELOS DA LOJA UNIFICADOS ---

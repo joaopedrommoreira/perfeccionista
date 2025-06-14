@@ -4,6 +4,8 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import Navbar from './components/Navbar';
 import { AuthProvider } from './context/AuthContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Importa as páginas dos seus novos arquivos
 import HomePage from './pages/HomePage';
@@ -33,6 +35,18 @@ function App() {
             <Route path="/user/:userId" element={<PublicProfilePage />} />
           </Routes>
         </main>
+        <ToastContainer
+            position="bottom-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+          />
       </Router>
     </AuthProvider>
   );
