@@ -261,6 +261,10 @@ def equip_banner():
 @main_bp.route('/user/<int:user_id>/platinados')
 def get_user_platinados(user_id):
     user = User.query.get_or_404(user_id)
+    platinados_steam = Platinado.query.filter_by(
+        user_id=user.id, 
+        platform='steam'
+    ).order_by(Platinado.achieved_at.desc()).limit(12).all()
     platinados = Platinado.query.filter_by(user_id=user.id).order_by(Platinado.achieved_at.desc()).limit(12).all()
     platinados_data = [{"appid": p.game_appid, "name": p.game_name} for p in platinados]
     return jsonify({"games": platinados_data})
@@ -321,7 +325,9 @@ def unfollow_user(user_id):
 @main_bp.route('/user/<int:user_id>')
 def get_public_user_profile(user_id):
     user = User.query.get_or_404(user_id)
-    
+    steam_platinas_count = Platinado.query.filter_by(user_id=user.id, platform='steam').count()
+    retro_mastered_count = Platinado.query.filter_by(user_id=user.id, platform='retroachievements').count()
+
     auth_header = request.headers.get('Authorization')
     # Prepara o dicionário de dados, agora incluindo o banner
     public_data = {
@@ -330,6 +336,7 @@ def get_public_user_profile(user_id):
         "name": user.name, # Nome do Google como fallback
         "picture_url": user.picture_url, # Foto do Google/upload como fallback
         "steam_id": user.steam_id,
+        "retro_username": user.retro_username,
         "equipped_banner_url": user.equipped_banner_url, # <<< O CAMPO QUE FALTAVA
         "total_xp": user.total_xp, 
         "total_coins": user.total_coins,
@@ -339,7 +346,10 @@ def get_public_user_profile(user_id):
         "total_games_count": 0,
         "followers_count": user.followers.count(),
         "following_count": user.followed.count(),
-        "is_followed_by_viewer": False
+        "is_followed_by_viewer": False,
+
+        "steam_perfect_games": steam_platinas_count,
+        "retro_mastered_games": retro_mastered_count
     }
     public_data['followers_count'] = user.followers.count()
     public_data['following_count'] = user.followed.count()

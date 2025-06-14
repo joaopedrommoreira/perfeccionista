@@ -94,16 +94,10 @@ return (
         />
         <div className="container">
             <div className="profile-main-content">
-                {/* --- HEADER DO PERFIL COM NOVO LAYOUT --- */}
                 <div className="profile-user-info-header">
                     <img src={getAvatarUrl()} alt={profileData.name} className="profile-avatar-large" />
                     <div className="profile-header-center">
                         <h1>{profileData.username || profileData.steam_name || profileData.name}</h1>
-                        <div className="platform-icons">
-                            {profileData.steam_id && <img src="https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg" alt="Steam"/>}
-                        </div>
-                    </div>
-                    <div className="profile-header-social">
                         <div className="follow-stats">
                             <div className="follow-stat-item">
                                 <strong>{profileData.followers_count}</strong>
@@ -114,6 +108,13 @@ return (
                                 <span>Seguindo</span>
                             </div>
                         </div>
+                    </div>
+                    <div className="profile-header-social">
+                        <div className="platform-icons">
+                            {profileData.steam_id && <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/640px-Steam_icon_logo.svg.png" alt="Steam"/>}
+                            {/* Adicione um ícone para o RetroAchievements se o usuário tiver vinculado */}
+                            {profileData.retro_username && <img src="https://docs.retroachievements.org/ra-logo-big-shadow.png" alt="RetroAchievements"/>}
+                        </div>
                         {currentUser && currentUser.id !== profileData.id && (
                             <button onClick={handleFollowToggle} className="button-primary follow-button">
                                 {profileData.is_followed_by_viewer ? 'Deixar de Seguir' : 'Seguir'}
@@ -121,26 +122,40 @@ return (
                         )}
                     </div>
                 </div>
-
-                {/* STATS DE JOGOS (REMOVEMOS OS DE SEGUIDORES DAQUI) */}
                 
-                {/* O restante da página continua igual */}
-                    <div className="profile-games-section">
-                        <h2 className="title-platina">Jogos Platinados ({games.length})</h2>
-                        <div className="games-grid-public">
-                            {games.length > 0 ? games.map(game => (
-                                // --- NOVO CARD DE JOGO PLATINADO ---
+                {/* --- SEÇÃO DE ESTATÍSTICAS DE JOGOS --- */}
+                <div className="profile-stats">
+                    {/* Card para Masterizados do RetroAchievements */}
+                    {profileData.retro_username && (
+                        <div className="stat-box">
+                            <h3>{profileData.retro_mastered_games}</h3>
+                            <p>Masterizados (RA)</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* --- GALERIA DE JOGOS, AGORA APENAS PARA STEAM --- */}
+                <div className="profile-games-section">
+                    <h2>Platinas da Steam ({profileData.steam_perfect_games})</h2>
+                    <div className="games-grid-public">
+                        {games.length > 0 ? (
+                            games.map(game => (
                                 <div key={game.appid} className="profile-game-card">
                                     <img 
                                         src={`https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${game.appid}/header.jpg`} 
                                         alt={game.name} 
                                     />
+                                    <div className="profile-game-card-title">
+                                        {game.name}
+                                    </div>
                                 </div>
-                            )) : (
-                                <p>Nenhum jogo platinado para exibir ainda.</p>
-                            )}
-                        </div>
+                            ))
+                        ) : (
+                            // Mostra esta mensagem apenas se a conta Steam estiver vinculada mas não houver jogos
+                            profileData.steam_id && <p>Nenhum jogo da Steam para exibir ainda.</p>
+                        )}
                     </div>
+                </div>
             </div>
         </div>
     </div>
