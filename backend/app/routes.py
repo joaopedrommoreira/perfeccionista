@@ -487,6 +487,7 @@ def add_platinado_game():
     auth_header = request.headers.get('Authorization')
     if not auth_header or not auth_header.startswith('Bearer '):
         return jsonify({"error": "Autorização ausente"}), 401
+    
     token = auth_header.split(' ')[1]
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"], leeway=10)
@@ -498,8 +499,8 @@ def add_platinado_game():
 
     # 2. Pega os dados enviados pelo front-end
     data = request.get_json()
-    platform = data.get('platform', 'steam')  # Pega a plataforma (padrão: 'steam')
-    identifier = data.get('identifier')      # Pega o identificador (nome do jogo ou ID)
+    platform = data.get('platform', 'steam')
+    identifier = data.get('identifier')
     
     if not identifier:
         return jsonify({"error": "Nome ou ID do jogo não fornecido."}), 400
@@ -516,7 +517,7 @@ def add_platinado_game():
             appid_to_check = int(identifier)
             game_rule = Game.query.filter_by(appid=appid_to_check, platform='steam').first()
         except ValueError:
-            # Se não for número, busca pelo nome
+            # Se não for número, busca pelo nome de forma flexível
             game_rule = Game.query.filter(Game.name.ilike(f"%{identifier}%"), Game.platform == 'steam').first()
 
         if not game_rule:
@@ -525,12 +526,11 @@ def add_platinado_game():
         appid = game_rule.appid
         official_game_name = game_rule.name
 
-        # Verifica se o jogo já foi adicionado
         if Platinado.query.filter_by(user_id=user.id, game_appid=appid, platform='steam').first():
             return jsonify({"message": f'"{official_game_name}" já está no seu perfil.'}), 200
 
-        # Lógica de verificação na API da Steam (posse e conquistas)
         try:
+            # Lógica de verificação na API da Steam (posse e conquistas)
             owned_games_url = f"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={STEAM_API_KEY}&steamid={user.steam_id}&format=json"
             owned_games_appids = [game['appid'] for game in requests.get(owned_games_url).json().get('response', {}).get('games', [])]
             if appid not in owned_games_appids:
@@ -570,72 +570,26 @@ def add_platinado_game():
             return jsonify({"message": 'Este jogo já está no seu perfil.'}), 200
 
         try:
-            # Use the correct API endpoint with proper parameters
-            ra_url = f"https://retroachievements.org/API/API_GetUserProgress.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&u={user.retro_username}&i={game_id}"
-            print(f"URL da API RetroAchievements: {ra_url}")
+            ra_url = f"https://retroachievements.org/API/API_GetGameInfoAndUserProgress.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&u={user.retro_username}&g={game_id}"
+            response = requests.get(ra_url).json()
             
-            response = requests.get(ra_url)
-            response.raise_for_status()
-            print(f"Status da resposta: {response.status_code}")
-            print(f"Resposta da API: {response.text}")
-
-            ra_data = response.json()
-            
-            # Check for API errors first
-            if 'Error' in ra_data:
-                return jsonify({"error": f"Erro da API RetroAchievements: {ra_data['Error']}"}), 404
-            
-            # Debug the actual response structure first
-            print(f"Debug - Dados completos recebidos: {ra_data}")
-            
-            # Try multiple possible field names for achievements
-            num_achievements = (ra_data.get('NumPossibleAchievements') or 
-                              ra_data.get('PossibleScore') or 
-                              ra_data.get('MaxPossible') or 0)
-            
-            achieved_hardcore = (ra_data.get('NumAchievedHardcore') or 
-                               ra_data.get('ScoreAchievedHardcore') or 
-                               ra_data.get('HardcoreAchievements') or 0)
-            
-            achieved_softcore = (ra_data.get('NumAchieved') or 
-                               ra_data.get('ScoreAchieved') or 
-                               ra_data.get('SoftcoreAchievements') or 0)
-            
-            game_name = (ra_data.get('Title') or 
-                        ra_data.get('GameTitle') or 
-                        ra_data.get('GameName') or 
-                        f"Jogo RA ID {game_id}")
-
-            print(f"Debug - Conquistas possíveis: {num_achievements}, Hardcore conquistadas: {achieved_hardcore}, Softcore: {achieved_softcore}")
-            print(f"Debug - Tipos de dados: num_achievements={type(num_achievements)}, achieved_hardcore={type(achieved_hardcore)}")
-            
-            # If we don't have achievement data, try alternative API call
-            if num_achievements == 0:
-                # Try getting game info first to verify the game exists
-                game_info_url = f"https://retroachievements.org/API/API_GetGame.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&i={game_id}"
-                game_info_response = requests.get(game_info_url)
-                game_info_data = game_info_response.json()
-                
-                if 'Error' in game_info_data:
-                    return jsonify({"error": f"Jogo não encontrado: {game_info_data['Error']}"}), 404
-                
-                num_achievements = game_info_data.get('NumAchievements', 0)
-                game_name = game_info_data.get('Title', f"Jogo RA ID {game_id}")
-                
-                if num_achievements == 0:
-                    return jsonify({"error": f"O jogo '{game_name}' não possui conquistas disponíveis."}), 404
+            num_achievements = int(response.get('NumPossibleAchievements', 0))
+            achieved_hardcore = int(response.get('NumAchievedHardcore', 0))
+            game_name = response.get('Title', f"Jogo RA ID {game_id}")
 
             if num_achievements > 0 and achieved_hardcore >= num_achievements:
                 game_rule = Game.query.filter_by(appid=game_id, platform='retroachievements').first()
                 xp_ganho = game_rule.xp_value if game_rule else 10
                 fichas_ganhas = game_rule.coin_value if game_rule else 5
-                user.total_xp += xp_ganho
-                user.total_coins += fichas_ganhas
+                
+                user.total_xp = (user.total_xp or 0) + xp_ganho
+                user.total_coins = (user.total_coins or 0) + fichas_ganhas
+                
                 db.session.add(Platinado(user_id=user.id, game_appid=game_id, game_name=game_name, platform='retroachievements'))
                 db.session.commit()
                 return jsonify({"message": f'Verificado! Você masterizou "{game_name}" e ganhou {xp_ganho} XP e {fichas_ganhas} Fichas!'}), 200
             else:
-                return jsonify({"error": f"Verificação falhou. Você ainda não masterizou '{game_name}' no modo Hardcore. ({achieved_hardcore}/{num_achievements} conquistas hardcore)"}), 403
+                return jsonify({"error": f"Verificação falhou. Você ainda não masterizou '{game_name}' no modo Hardcore."}), 403
         except Exception as e:
             return jsonify({"error": f"Ocorreu um erro ao se comunicar com a API do RetroAchievements: {e}"}), 500
 
