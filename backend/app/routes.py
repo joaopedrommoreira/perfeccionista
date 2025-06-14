@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta, timezone
 import jwt
+import json
 import requests
 from flask import Blueprint, redirect, request, session, jsonify, current_app, send_from_directory
 from google.oauth2 import id_token
@@ -571,10 +572,19 @@ def add_platinado_game():
 
         try:
             ra_url = f"https://retroachievements.org/API/API_GetGameInfoAndUserProgress.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&u={user.retro_username}&g={game_id}"
-            response = requests.get(ra_url).json()
-            
-            num_achievements = int(response.get('NumPossibleAchievements', 0))
-            achieved_hardcore = int(response.get('NumAchievedHardcore', 0))
+            response = requests.get(ra_url)
+            response.raise_for_status()
+            ra_data = response.json()
+
+            # --- DEPURAÇÃO DETALHADA DA RESPOSTA ---
+            print("\n--- RESPOSTA COMPLETA DA API RA ---")
+            # Usamos json.dumps para imprimir o JSON de forma legível
+            print(json.dumps(ra_data, indent=2))
+            print("---------------------------------\n")
+            # --- FIM DA DEPURAÇÃO ---
+
+            num_achievements = int(ra_data.get('NumPossibleAchievements', 0))
+            achieved_hardcore = int(ra_data.get('NumAchievedHardcore', 0))
             game_name = response.get('Title', f"Jogo RA ID {game_id}")
 
             if num_achievements > 0 and achieved_hardcore >= num_achievements:
