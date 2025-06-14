@@ -571,21 +571,22 @@ def add_platinado_game():
             return jsonify({"message": 'Este jogo já está no seu perfil.'}), 200
 
         try:
+            # Usamos o endpoint GetGameInfoAndUserProgress para um único jogo
             ra_url = f"https://retroachievements.org/API/API_GetGameInfoAndUserProgress.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&u={user.retro_username}&g={game_id}"
-            response = requests.get(ra_url)
-            response.raise_for_status()
-            ra_data = response.json()
-
-            # --- DEPURAÇÃO DETALHADA DA RESPOSTA ---
-            print("\n--- RESPOSTA COMPLETA DA API RA ---")
-            # Usamos json.dumps para imprimir o JSON de forma legível
+            print(f"\n--- CHAMANDO A URL: {ra_url} ---\n")
+            ra_data = requests.get(ra_url).json()
+            print("--- RESPOSTA CRUA DA API RETROACHIEVEMENTS ---")
+            # Usamos json.dumps para imprimir o JSON de forma bonita e legível
             print(json.dumps(ra_data, indent=2))
-            print("---------------------------------\n")
-            # --- FIM DA DEPURAÇÃO ---
-
-            num_achievements = int(ra_data.get('NumPossibleAchievements', 0))
-            achieved_hardcore = int(ra_data.get('NumAchievedHardcore', 0))
-            game_name = response.get('Title', f"Jogo RA ID {game_id}")
+            print("------------------------------------------\n")
+            # Verificação correta baseada na resposta da API
+            num_achievements = int(ra_data.get('NumAchievements', 0))
+            achieved_hardcore = int(ra_data.get('NumAwardedToUserHardcore', 0))
+            game_name = ra_data.get('Title', f"Jogo RA ID {game_id}")
+            print(f"--- DADOS INTERPRETADOS ---")
+            print(f"Total de Conquistas no Jogo: {num_achievements}")
+            print(f"Conquistas Hardcore Obtidas: {achieved_hardcore}")
+            print("---------------------------\n")
 
             if num_achievements > 0 and achieved_hardcore >= num_achievements:
                 game_rule = Game.query.filter_by(appid=game_id, platform='retroachievements').first()
@@ -605,6 +606,72 @@ def add_platinado_game():
 
     else:
         return jsonify({"error": "Plataforma desconhecida."}), 400
+    
+@main_bp.route('/profile/sync-retro', methods=['POST'])
+def sync_retro_achievements():
+    # 1. Autenticação do usuário (sempre igual)
+    auth_header = request.headers.get('Authorization')
+    token = auth_header.split(' ')[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"], leeway=10)
+        user = User.query.get(payload['sub'])
+        if not user or not user.retro_username:
+            return jsonify({"error": "Usuário ou conta RA não vinculada."}), 404
+    except:
+        return jsonify({"error": "Token inválido"}), 401
+
+    # 2. Chama o endpoint CORRETO da API do RA
+    try:
+        ra_url = f"https://retroachievements.org/API/API_GetUserCompletedGames.php?z={RETRO_API_USER}&y={RETRO_API_KEY}&u={user.retro_username}"
+        response = requests.get(ra_url)
+        response.raise_for_status()
+        
+        # A resposta é a própria lista, não um dicionário com uma chave 'response'
+        mastered_games_data = response.json()
+        
+        # Filtramos para pegar apenas os jogos de hardcore mode
+        mastered_games = [game for game in mastered_games_data if game.get('HardcoreMode') == '1']
+        
+    except Exception as e:
+        print(f"Erro ao buscar jogos completos do RA: {e}")
+        return jsonify({"error": "Não foi possível buscar os dados do RetroAchievements."}), 500
+
+    # 3. Processa os jogos e adiciona os que forem novos
+    newly_added_count = 0
+    total_xp_earned = 0
+    total_coins_earned = 0
+    
+    existing_game_ids = {p.game_appid for p in user.platinados if p.platform == 'retroachievements'}
+
+    for game in mastered_games:
+        game_id = int(game['GameID'])
+        if game_id in existing_game_ids:
+            continue
+
+        game_name = game['Title']
+        game_rule = Game.query.filter_by(appid=game_id, platform='retroachievements').first()
+        xp_ganho = game_rule.xp_value if game_rule else 10
+        fichas_ganhas = game_rule.coin_value if game_rule else 5
+        
+        user.total_xp += xp_ganho
+        user.total_coins += fichas_ganhas
+        
+        new_platinado = Platinado(user_id=user.id, game_appid=game_id, game_name=game_name, platform='retroachievements')
+        db.session.add(new_platinado)
+        
+        newly_added_count += 1
+        total_xp_earned += xp_ganho
+        total_coins_earned += fichas_ganhas
+
+    if newly_added_count > 0:
+        db.session.commit()
+        return jsonify({
+            "message": f"Sincronização concluída! {newly_added_count} novos jogos masterizados foram adicionados.",
+            "xp_earned": total_xp_earned,
+            "coins_earned": total_coins_earned
+        })
+    else:
+        return jsonify({"message": "Seu perfil já está sincronizado! Nenhum jogo novo (Hardcore) encontrado."})
 
 @main_bp.route('/profile/games/retro', methods=['GET', 'POST'])
 def get_retro_achievements_games():
