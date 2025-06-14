@@ -102,7 +102,7 @@ export default function DashboardPage() {
         const requestBody = {
         platform: platform,
         // Para RA, sempre enviamos o ID. Para Steam, pode ser nome ou ID.
-        // O backend saberá como tratar.
+        // O backend saberá como tratar.wew
         identifier: gameInput 
     };
         try {
