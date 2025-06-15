@@ -15,6 +15,7 @@ import PublicProfilePage from './pages/PublicProfilePage';
 import ShopPage from './pages/ShopPage'; // Importa a página da loja
 import InventoryPage from './pages/InventoryPage'; // Importa a página de inventário
 import OnboardingPage from './pages/OnboardingPage'; // Importa a página de onboarding
+import GameDetailPage from './pages/GameDetailPage'; // Importa a página de detalhes do jogo
 
 
 
@@ -33,6 +34,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} /> {/* Rota para a página de onboarding */}
             <Route path="/user/:userId" element={<PublicProfilePage />} />
+            <Route path="/jogo/:appid" element={<GameDetailPage />} />
           </Routes>
         </main>
         <ToastContainer

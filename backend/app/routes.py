@@ -757,8 +757,8 @@ def get_recent_games():
 
 @main_bp.route('/rankings/top-games')
 def get_top_games():
-    top_games_query = db.session.query(Platinado.game_appid, Platinado.game_name, db.func.count(Platinado.game_appid).label('total_platinados')).group_by(Platinado.game_appid, Platinado.game_name).order_by(db.desc('total_platinados')).limit(10).all()
-    top_games_data = [{"appid": game.game_appid, "name": game.game_name, "count": game.total_platinados} for game in top_games_query]
+    top_games_query = db.session.query(Platinado.game_appid, Platinado.game_name, Platinado.platform, db.func.count(Platinado.game_appid).label('total_platinados')).group_by(Platinado.game_appid, Platinado.game_name, Platinado.platform).order_by(db.desc('total_platinados')).limit(10).all()
+    top_games_data = [{"appid": game.game_appid, "name": game.game_name, "count": game.total_platinados, "platform": game.platform} for game in top_games_query]
     return jsonify(top_games_data)
 
 @main_bp.route('/rankings/top-users')
@@ -766,3 +766,34 @@ def get_top_users():
     top_users_query = User.query.order_by(User.total_xp.desc()).limit(10).all()
     top_users_data = [{"id": user.id, "name": user.username or user.name, "avatar": user.picture_url, "xp": user.total_xp} for user in top_users_query]
     return jsonify(top_users_data)
+
+@main_bp.route('/game/<int:appid>')
+def get_game_details(appid):
+    # Primeiro, busca os detalhes do jogo no nosso "livro de regras"
+    game_info = Game.query.filter_by(appid=appid).first()
+    if not game_info:
+        return jsonify({"error": "Jogo não encontrado no nosso banco de dados."}), 404
+
+    # Se encontrou, busca todos os usuários que platinaram este jogo
+    platinado_entries = Platinado.query.filter_by(game_appid=appid).all()
+
+    completers_data = []
+    for entry in platinado_entries:
+        # Para cada entrada, pegamos os dados públicos do usuário
+        user = entry.user
+        completers_data.append({
+            "id": user.id,
+            "username": user.username or user.name,
+            "avatar": user.picture_url
+        })
+
+    response_data = {
+        "game": {
+            "appid": game_info.appid,
+            "name": game_info.name,
+            "platform": game_info.platform
+        },
+        "completers": completers_data
+    }
+
+    return jsonify(response_data)
