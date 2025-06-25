@@ -87,11 +87,10 @@ export default function PublicProfilePage() {
     if (!profileData) return <div className="container"><h1>Perfil não encontrado.</h1></div>;
 
 return (
-    <div className="profile-page-container">
-        <header 
-            className="profile-banner" 
-            style={{ backgroundImage: `url(${profileData.equipped_banner_url || '/default-banner.jpg'})` }}
-        />
+    <div 
+        className="profile-page-container-full-bg" 
+        style={{ backgroundImage: `url(${profileData.equipped_banner_url || '/default-banner.jpg'})` }}
+    >
         <div className="container">
             <div className="profile-main-content">
                 <div className="profile-user-info-header">

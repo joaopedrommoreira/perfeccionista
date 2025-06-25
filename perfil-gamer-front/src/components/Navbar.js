@@ -29,6 +29,11 @@ export default function Navbar() {
                             Loja
                         </NavLink>
                     </li>
+                    <li className="navbar-item">
+                        <NavLink to="/database" className={({ isActive }) => (isActive ? "navbar-link active" : "navbar-link")}>
+                            Database
+                        </NavLink>
+                    </li>
 
                     {currentUser ? (
                         // --- Links para usuários LOGADOS ---

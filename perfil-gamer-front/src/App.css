@@ -209,18 +209,66 @@ body {
 /* ============================================== */
 /* ESTILOS FINAIS PARA A PÁGINA DE PERFIL PÚBLICO */
 /* ============================================== */
-
-.profile-page-container {
+.profile-page-container-full-bg {
   width: 100%;
-  padding-bottom: 50px;
+  min-height: 100vh; /* Garante que o fundo ocupe no mínimo a tela inteira */
+  
+  /* A imagem de fundo */
+  background-size: cover;
+  background-position: center center;
+  background-attachment: fixed; /* Deixa a imagem fixa durante o scroll */
+  
+  position: relative; /* Necessário para o overlay */
+  display: flex;
+  align-items: center; /* Centraliza o card de conteúdo verticalmente */
+  padding: 50px 0; /* Espaçamento no topo e no final */
 }
 
-.profile-banner {
-  height: 350px;
-  background-color: #1e2229;
-  background-size: cover;
-  background-position: center;
+/* O overlay escuro para garantir a legibilidade */
+.profile-page-container-full-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(22, 25, 32, 0.85); /* Cor #161920 com 85% de opacidade */
+  z-index: 1;
+}
+
+/* O .container garante que o conteúdo não fique colado nas bordas */
+.profile-page-container-full-bg .container {
+  position: relative;
+  z-index: 2; /* Garante que o conteúdo fique na frente do overlay */
   width: 100%;
+}
+
+/* O card de conteúdo principal */
+.profile-main-content-v2 {
+  background-color: rgba(40, 44, 52, 0.9); /* #282c34 com 90% de opacidade */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 30px;
+  backdrop-filter: blur(10px); /* Efeito de vidro fosco no fundo do card */
+  -webkit-backdrop-filter: blur(10px);
+}
+
+/* Os estilos para o avatar, nome, stats e jogos podem ser os mesmos que já tínhamos.
+   Apenas garantimos que o .profile-user-info-header não tenha mais margens negativas. */
+.profile-user-info-header {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.profile-avatar-large {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid #61dafb;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 /* O .container aqui serve para centralizar o conteúdo principal */
@@ -229,18 +277,6 @@ body {
 }
 
 /* O card principal que contém todas as informações */
-.profile-main-content {
-  background-color: #282c34;
-  border-radius: 12px;
-  padding: 30px 30px;
-  /* Puxa o card para cima, sobrepondo o banner */
-  margin-top: -120px;
-  position: relative;
-  z-index: 10;
-  box-shadow: 0 -5px 25px rgba(0,0,0,0.5);
-  /* Adiciona um preenchimento no topo para dar espaço ao avatar */
-  padding-top: 100px; 
-}
 
 /* Header que contém o avatar e o nome */
 .profile-user-info-header {
@@ -253,16 +289,6 @@ body {
   width: 100%;
 }
 
-.profile-avatar-large {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  border: 6px solid #282c34; /* Borda da mesma cor do fundo para efeito de recorte */
-  object-fit: cover;
-  z-index: 11;
-  margin-bottom: 15px;
-  margin: 0; /* Remove margens antigas para alinhar com flex */
-}
 .profile-header-center {
   flex-grow: 1; /* Faz esta div ocupar o espaço do meio */
   text-align: left;
@@ -1313,4 +1339,130 @@ main {
   display: flex;
   gap: 0.5rem;
   margin: 0;
+}
+
+/* Estilos para a Tabela da Página de Database */
+.database-table {
+  width: 100%;
+  margin-top: 30px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.database-table th, .database-table td {
+  padding: 12px 15px;
+  text-align: left;
+}
+
+.database-table thead tr {
+  background-color: #282c34;
+  color: #ccc;
+  font-size: 1rem;
+}
+
+.database-table tbody tr {
+  border-bottom: 1px solid #282c34;
+}
+
+.database-table tbody tr:last-of-type {
+  border-bottom: none;
+}
+
+.database-table tbody tr:hover {
+  background-color: #3a5f8a;
+}
+
+.game-title-cell {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.game-icon-table {
+    width: 92px; /* Metade do tamanho padrão da cápsula */
+    height: 34px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+.database-search-input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  background-color: #1e2229;
+  color: white;
+  border: 1px solid #444c56;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.database-search-input:focus {
+  outline: none;
+  border-color: var(--cor-principal);
+  box-shadow: 0 0 10px rgba(97, 218, 251, 0.3);
+}
+
+/* estilos para os slides*/
+
+.news-carousel-section {
+  width: 100%;
+  margin: 0 auto 2rem auto; /* Espaçamento abaixo do carrossel */
+  margin-top: 1rem;
+  max-width: 1200px; /* Largura máxima */
+  padding: 0 24px; /* Alinha com o resto do conteúdo */
+}
+
+.news-slide {
+  position: relative;
+  width: 100%;
+  height: 300px; /* Altura do slide */
+  border-radius: 12px;
+  overflow: hidden;
+  color: white;
+}
+
+.slide-background-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.slide-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.7) 40%, rgba(0, 0, 0, 0) 100%);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 2rem;
+}
+
+.slide-content h2 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+}
+
+.slide-content p {
+  font-size: 1.1rem;
+  max-width: 70%; /* Para não ocupar a largura toda */
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Estilização dos "pontos" de navegação do carrossel */
+.slick-dots li button:before {
+    font-size: 12px;
+    color: #fff;
+    opacity: 0.5;
+}
+
+.slick-dots li.slick-active button:before {
+    color: var(--cor-principal);
+    opacity: 1;
 }

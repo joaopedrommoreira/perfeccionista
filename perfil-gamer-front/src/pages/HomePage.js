@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css"; 
+import "slick-carousel/slick/slick-theme.css";
 
 export default function HomePage() {
     const [topGames, setTopGames] = useState([]);
@@ -40,6 +43,39 @@ export default function HomePage() {
         fetchRankingData();
     }, []);
 
+    const sliderSettings = {
+    dots: true,
+    infinite: true,
+    speed: 500,
+    slidesToShow: 1,
+    slidesToScroll: 1,
+    autoplay: true,
+    autoplaySpeed: 5000,
+    fade: true,
+    cssEase: 'linear'
+    };
+
+    const newsSlides = [
+  {
+    id: 1,
+    title: "Chegou os Jogos da Capcom!",
+    description: "Agora você pode comprar e equipar banners para personalizar seu perfil público. Visite a Loja e o seu Inventário!",
+    imageUrl: "https://sm.ign.com/ign_br/screenshot/default/01hyjcymm23t5ppjzba77bf3vq_bx6r.jpg" // Exemplo de imagem
+  },
+  {
+    id: 2,
+    title: "Integração com RetroAchievements Chegou!",
+    description: "Vincule sua conta do RetroAchievements no Dashboard e adicione seus jogos masterizados ao seu perfil.",
+    imageUrl: "https://sm.ign.com/t/ign_br/screenshot/default/bdc077c8b4bbbd099eeb421963c7f90d_3jtp.1200.jpg" // Exemplo de imagem
+  },
+  {
+    id: 3,
+    title: "Lançamento do BETA 0.5!",
+    description: "Estamos felizes em anunciar o lançamento do Perfeccionista BETA 0.5!",
+    imageUrl: "https://techstory.in/wp-content/uploads/2022/01/wXbZrULvucAkiwyk7xyLoe.jpg" // Exemplo de imagem
+  }
+];
+
     return (
         <>
             {/* --- SEÇÃO 1: CABEÇALHO VISUAL --- */}
@@ -62,7 +98,20 @@ export default function HomePage() {
                     </div>              
                 </div>
             </header>
-
+        {/* --- NOVA SEÇÃO DE CARROSSEL DE NOVIDADES --- */}
+        <section className="news-carousel-section">
+            <Slider {...sliderSettings}>
+                {newsSlides.map(slide => (
+                    <div key={slide.id} className="news-slide">
+                        <img src={slide.imageUrl} alt={slide.title} className="slide-background-image"/>
+                        <div className="slide-content">
+                            <h2>{slide.title}</h2>
+                            <p>{slide.description}</p>
+                        </div>
+                    </div>
+                ))}
+            </Slider>
+        </section>
             {/* --- SEÇÃO 2: RANKINGS --- */}
             <section className="rankings-section">
                 <div className="container">

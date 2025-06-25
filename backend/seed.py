@@ -6,34 +6,52 @@ from app.models import db, Game, ShopItem, ItemKey, User
 # Lista de jogos para adicionar ao nosso "livro de regras"
 # AppID pode ser encontrado na URL da loja Steam (ex: store.steampowered.com/app/1174180/...)
 GAMES_TO_SEED = [
-    {'appid': 1174180, 'name': 'Red Dead Redemption 2', 'difficulty': 'Difícil', 'xp_value': 341, 'coin_value': 85},
-    {'appid': 367520, 'name': 'Hollow Knight', 'difficulty': 'Difícil', 'xp_value': 418, 'coin_value': 104},
-    {'appid': 601150, 'name': 'Devil May Cry 5', 'difficulty': 'Difícil', 'xp_value': 243, 'coin_value': 61},
-    {'appid': 1245620, 'name': 'Elden Ring', 'difficulty': 'Média', 'xp_value': 180, 'coin_value': 45},
-    {'appid': 220240, 'name': 'Far Cry 3', 'difficulty': 'Fácil', 'xp_value': 68, 'coin_value': 17},
-    {'appid': 298110, 'name': 'Far Cry 4', 'difficulty': 'Média', 'xp_value': 158, 'coin_value': 40},
-    {'appid': 552520, 'name': 'Far Cry 5', 'difficulty': 'Média', 'xp_value': 201, 'coin_value': 50},
-    {'appid': 2369390, 'name': 'Far Cry 6', 'difficulty': 'Média', 'xp_value': 153, 'coin_value': 38},
-    {'appid': 1091500, 'name': 'Cyberpunk 2077', 'difficulty': 'Média', 'xp_value': 121, 'coin_value': 30},
-    {'appid': 271590, 'name': 'Grand Theft Auto V', 'difficulty': 'Difícil', 'xp_value': 499, 'coin_value': 125},
-    {'appid': 12210, 'name': 'Grand Theft Auto IV', 'difficulty': 'Difícil', 'xp_value': 426, 'coin_value': 106},
-    {'appid': 1693980, 'name': 'GTA San Andreas: Definitive Edition', 'difficulty': 'Média', 'xp_value': 90, 'coin_value': 22},
-    {'appid': 1685450, 'name': 'GTA III: The Definitive Edition', 'difficulty': 'Média', 'xp_value': 121, 'coin_value': 30},
-    {'appid': 1642000, 'name': 'GTA Vice City: The Definitive Edition', 'difficulty': 'Média', 'xp_value': 117, 'coin_value': 29},
-    {'appid': 292030, 'name': 'The Witcher 3: Wild Hunt', 'difficulty': 'Média', 'xp_value': 426, 'coin_value': 98},
-    {'appid': 1145360, 'name': 'Hades', 'difficulty': 'Média', 'xp_value': 233, 'coin_value': 53},
-    {'appid': 1145340, 'name': 'Hades II', 'difficulty': 'Média', 'xp_value': 103, 'coin_value': 26},
-    {'appid': 883710, 'name': 'Resident Evil 2 Remake', 'difficulty': 'Difícil', 'xp_value': 188, 'coin_value': 47},
-    {'appid': 952060, 'name': 'Resident Evil 3 Remake', 'difficulty': 'Média', 'xp_value': 88, 'coin_value': 22},
-    {'appid': 2050650, 'name': 'Resident Evil 4 Remake', 'difficulty': 'Difícil', 'xp_value': 165, 'coin_value': 41},
-    {'appid': 21690, 'name': 'Resident Evil 5', 'difficulty': 'Média', 'xp_value': 191, 'coin_value': 48},
-    {'appid': 221040, 'name': 'Resident Evil 6', 'difficulty': 'Difícil', 'xp_value': 254, 'coin_value': 114},
-    {'appid': 418370, 'name': 'Resident Evil 7: Biohazard', 'difficulty': 'Média', 'xp_value': 162, 'coin_value': 41},
-    {'appid': 1196590, 'name': 'Resident Evil Village', 'difficulty': 'Média', 'xp_value': 140, 'coin_value': 35},
-    {'appid': 268910, 'name': 'Cuphead', 'difficulty': 'Difícil', 'xp_value': 166, 'coin_value': 41},
-    {'appid': 2835570, 'name': 'Buckshot Roulette', 'difficulty': 'Média', 'xp_value': 42, 'coin_value': 5},
-    {'appid': 606150, 'name': 'Moonlighter', 'difficulty': 'Média', 'xp_value': 144, 'coin_value': 36},
+    {'appid': 218620, 'name': 'Payday 2', 'difficulty': 'Muito Difícil', 'xp_value': 920, 'coin_value': 230},
+    {'appid': 1174180, 'name': 'Red Dead Redemption 2', 'difficulty': 'Difícil', 'xp_value': 780, 'coin_value': 195},
+    {'appid': 235460, 'name': 'Metal Gear Rising: Revengeance', 'difficulty': 'Muito Difícil', 'xp_value': 695, 'coin_value': 174},
+    {'appid': 367520, 'name': 'Hollow Knight', 'difficulty': 'Muito Difícil', 'xp_value': 680, 'coin_value': 170},
+    {'appid': 601150, 'name': 'Devil May Cry 5', 'difficulty': 'Extremamente Difícil', 'xp_value': 765, 'coin_value': 191},
+    {'appid': 271590, 'name': 'Grand Theft Auto V', 'difficulty': 'Moderado', 'xp_value': 710, 'coin_value': 170},
+    {'appid': 2835570, 'name': 'Buckshot Roulette', 'difficulty': 'Fácil', 'xp_value': 230, 'coin_value': 57},
+    {'appid': 2527500, 'name': 'Miside', 'difficulty': 'Muito Fácil', 'xp_value': 250, 'coin_value': 60},
+    {'appid': 220240, 'name': 'Far Cry 3', 'difficulty': 'Moderado', 'xp_value': 460, 'coin_value': 115},
+    {'appid': 298110, 'name': 'Far Cry 4', 'difficulty': 'Moderado', 'xp_value': 505, 'coin_value': 126},
+    {'appid': 552520, 'name': 'Far Cry 5', 'difficulty': 'Moderadamente Difícil', 'xp_value': 585, 'coin_value': 146},
+    {'appid': 939960, 'name': 'Far Cry New Dawn', 'difficulty': 'Fácil', 'xp_value': 400, 'coin_value': 100},
+    {'appid': 2369390, 'name': 'Far Cry 6', 'difficulty': 'Moderado', 'xp_value': 545, 'coin_value': 136},
+    {'appid': 883710, 'name': 'Resident Evil 2 Remake', 'difficulty': 'Muito Difícil', 'xp_value': 625, 'coin_value': 156},
+    {'appid': 952060, 'name': 'Resident Evil 3 Remake', 'difficulty': 'Difícil', 'xp_value': 540, 'coin_value': 135},
+    {'appid': 2050650, 'name': 'Resident Evil 4 Remake', 'difficulty': 'Muito Difícil', 'xp_value': 635, 'coin_value': 158},
+    {'appid': 21690, 'name': 'Resident Evil 5', 'difficulty': 'Difícil', 'xp_value': 555, 'coin_value': 138},
+    {'appid': 221040, 'name': 'Resident Evil 6', 'difficulty': 'Moderado', 'xp_value': 500, 'coin_value': 125},
+    {'appid': 418370, 'name': 'Resident Evil 7', 'difficulty': 'Difícil', 'xp_value': 575, 'coin_value': 143},
+    {'appid': 1196590, 'name': 'Resident Evil Village', 'difficulty': 'Difícil', 'xp_value': 545, 'coin_value': 136},
+    {'appid': 1091500, 'name': 'Cyberpunk 2077', 'difficulty': 'Moderado', 'xp_value': 525, 'coin_value': 131},
+    {'appid': 292030, 'name': 'The Witcher 3: Wild Hunt', 'difficulty': 'Muito Difícil', 'xp_value': 700, 'coin_value': 175},
+    {'appid': 20920, 'name': 'The Witcher 2', 'difficulty': 'Difícil', 'xp_value': 520, 'coin_value': 130},
+    {'appid': 227300, 'name': 'Euro Truck Simulator 2', 'difficulty': 'Fácil', 'xp_value': 470, 'coin_value': 117},
+    {'appid': 270880, 'name': 'American Truck Simulator', 'difficulty': 'Fácil', 'xp_value': 455, 'coin_value': 113},
+    {'appid': 1293830, 'name': 'Forza Horizon 4', 'difficulty': 'Difícil', 'xp_value': 685, 'coin_value': 171},
+    {'appid': 1551360, 'name': 'Forza Horizon 5', 'difficulty': 'Difícil', 'xp_value': 645, 'coin_value': 161},
+    {'appid': 2440510, 'name': 'Forza Motorsport', 'difficulty': 'Moderado', 'xp_value': 515, 'coin_value': 128},
+    {'appid': 2668510, 'name': 'Red Dead Redemption 1', 'difficulty': 'Muito Difícil', 'xp_value': 730, 'coin_value': 182},
+    {'appid': 12210, 'name': 'Grand Theft Auto IV', 'difficulty': 'Extremamente Difícil', 'xp_value': 660, 'coin_value': 165},
+    {'appid': 1547000, 'name': 'GTA San Andreas Definitive Edition', 'difficulty': 'Moderado', 'xp_value': 530, 'coin_value': 132},
+    {'appid': 1546990, 'name': 'GTA Vice City Definitive Edition', 'difficulty': 'Moderado', 'xp_value': 520, 'coin_value': 130},
+    {'appid': 1546970, 'name': 'GTA 3 Definitive Edition', 'difficulty': 'Moderado', 'xp_value': 535, 'coin_value': 133},
+    {'appid': 1245620, 'name': 'Elden Ring', 'difficulty': 'Difícil', 'xp_value': 665, 'coin_value': 166},
+    {'appid': 570940, 'name': 'Dark Souls', 'difficulty': 'Extremamente Difícil', 'xp_value': 735, 'coin_value': 183},
+    {'appid': 335300, 'name': 'Dark Souls 2', 'difficulty': 'Extremamente Difícil', 'xp_value': 725, 'coin_value': 181},
+    {'appid': 374320, 'name': 'Dark Souls 3', 'difficulty': 'Extremamente Difícil', 'xp_value': 740, 'coin_value': 185},
+    {'appid': 1627720, 'name': 'Lies of P', 'difficulty': 'Difícil', 'xp_value': 695, 'coin_value': 173},
+    {'appid': 814380, 'name': 'Sekiro: Shadows Die Twice', 'difficulty': 'Extremamente Difícil', 'xp_value': 705, 'coin_value': 176},
+    {'appid': 268910, 'name': 'Cuphead', 'difficulty': 'Difícil', 'xp_value': 670, 'coin_value': 167},
+    {'appid': 1145360, 'name': 'Hades', 'difficulty': 'Difícil', 'xp_value': 635, 'coin_value': 158},
+    {'appid': 1145350, 'name': 'Hades 2', 'difficulty': 'Difícil', 'xp_value': 635, 'coin_value': 158},
+    {'appid': 588650, 'name': 'Dead Cells', 'difficulty': 'Difícil', 'xp_value': 700, 'coin_value': 175},
+
 ]
+
 
 # Lista de jogos para a blacklist
 BLACKLIST_TO_SEED = [
@@ -59,50 +77,50 @@ BLACKLIST_TO_SEED = [
 ]
 
 REDEEMABLE_ITEMS_TO_SEED = [
-    {'appid': 367520, 'name': 'Chave Steam - Hollow Knight', 'description': 'Uma chave de ativação na Steam para o jogo Hollow Knight.', 'price_coins': 200},
-    {'appid': 413150, 'name': 'Chave Steam - Stardew Valley', 'description': 'Uma chave de ativação na Steam para o jogo Stardew Valley.', 'price_coins': 150}
+    #{'appid': 367520, 'name': 'Chave Steam - Hollow Knight', 'description': 'Uma chave de ativação na Steam para o jogo Hollow Knight.', 'price_coins': 200},
+    #{'appid': 413150, 'name': 'Chave Steam - Stardew Valley', 'description': 'Uma chave de ativação na Steam para o jogo Stardew Valley.', 'price_coins': 150}
 ]
 
 SHOP_ITEMS_TO_SEED = [
     {
-        'name': 'Chave Steam - Hollow Knight', 
-        'description': 'Uma chave de ativação na Steam para o aclamado metroidvania Hollow Knight.', 
-        'price_coins': 200, 
-        'item_type': 'GAME_KEY', # Define que este item é uma chave resgatável
-        'appid': 367520,
-        'value': None # Não tem um valor direto, pois as chaves estão em outra tabela
-    },
-    {
-        'name': 'Chave Steam - Stardew Valley', 
-        'description': 'Uma chave de ativação na Steam para o relaxante simulador de fazenda Stardew Valley.', 
-        'price_coins': 150, 
-        'item_type': 'GAME_KEY',
-        'appid': 413150,
-        'value': None
-    },
-    {
-        'name': 'Banner Red Dead Redemption 2', 
-        'description': 'Um banner épico da gangue Van der Linde para seu perfil público.', 
+        'name': 'Wallpaper Red Dead Redemption 2', 
+        'description': 'Um Background épico da gangue Van der Linde para seu perfil público.', 
         'price_coins': 500, 
         'item_type': 'BANNER', # Define que este item é um banner equipável
         'appid': 1174180,
-        'value': 'https://images3.alphacoders.com/948/948553.jpg' # O valor é a própria URL do banner
+        'value': 'https://images7.alphacoders.com/749/thumb-1920-749807.png' # O valor é a própria URL do banner
     },
     {
-        'name': 'Banner The Witcher 3: Wild Hunt', 
-        'description': 'Um banner épico da gangue Van der Linde para seu perfil público.', 
+        'name': 'Wallpaper The Witcher 3: Wild Hunt', 
+        'description': 'Um Background épico  do mundo de The Witcher 3 para seu perfil público.', 
         'price_coins': 500, 
         'item_type': 'BANNER', # Define que este item é um banner equipável
         'appid': 292030,
         'value': 'https://i.postimg.cc/VNs56pLk/tw3.png' # O valor é a própria URL do banner
+    },
+    {
+        'name': 'Wallpaper Devil May Cry 5', 
+        'description': 'Um Background épico de Dante e Vergil para seu perfil público.', 
+        'price_coins': 500, 
+        'item_type': 'BANNER', # Define que este item é um banner equipável
+        'appid': 601150,
+        'value': 'https://picfiles.alphacoders.com/320/thumb-1920-320697.png' # O valor é a própria URL do banner
+    },
+    {
+        'name': 'Wallpaper Resident Evil 4 Remake', 
+        'description': 'Um Background épico de Leon S. Kennedy enfrentando os Ganados para seu perfil público.', 
+        'price_coins': 500, 
+        'item_type': 'BANNER', # Define que este item é um banner equipável
+        'appid': 2050650,
+        'value': 'https://images7.alphacoders.com/130/thumb-1920-1306926.jpeg' # O valor é a própria URL do banner
     }
 ]
 
 
 # Chaves de exemplo (em um sistema real, elas viriam de um arquivo ou banco de dados seguro)
 KEYS_TO_SEED = {
-    'Chave Steam - Hollow Knight': ['AAAAA-BBBBB-CCCC1', 'AAAAA-BBBBB-CCCC2', 'AAAAA-BBBBB-CCCC3'],
-    'Chave Steam - Stardew Valley': ['DDDDD-EEEEE-FFFF1', 'DDDDD-EEEEE-FFFF2']
+    #'Chave Steam - Hollow Knight': ['AAAAA-BBBBB-CCCC1', 'AAAAA-BBBBB-CCCC2', 'AAAAA-BBBBB-CCCC3'],
+    #'Chave Steam - Stardew Valley': ['DDDDD-EEEEE-FFFF1', 'DDDDD-EEEEE-FFFF2']
 }
 
 def seed_database():

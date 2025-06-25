@@ -8,6 +8,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from google_auth_oauthlib.flow import Flow
 from werkzeug.utils import secure_filename
+from sqlalchemy import desc
 from .models import db, User, Platinado, Game, ShopItem, ItemKey, UserInventory, followers
 
 main_bp = Blueprint('main_bp', __name__, url_prefix='/api')
@@ -791,9 +792,29 @@ def get_game_details(appid):
         "game": {
             "appid": game_info.appid,
             "name": game_info.name,
-            "platform": game_info.platform
+            "platform": game_info.platform,
+            "xp_value": game_info.xp_value,
+            "coin_value": game_info.coin_value
         },
         "completers": completers_data
     }
 
     return jsonify(response_data)
+
+@main_bp.route('/games')
+def get_all_games_from_db():
+    """Retorna uma lista de todos os jogos registrados em nosso banco de dados de regras."""
+    # Ordena os jogos por nome para uma exibição organizada
+    games_list = Game.query.order_by(desc(Game.xp_value)).all()
+
+    games_data = [{
+        "id": game.id,
+        "appid": game.appid,
+        "name": game.name,
+        "platform": game.platform.capitalize(), # Ex: 'steam' -> 'Steam'
+        "difficulty": game.difficulty,
+        "xp_value": game.xp_value,
+        "coin_value": game.coin_value
+    } for game in games_list]
+
+    return jsonify(games_data)
